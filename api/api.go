@@ -1,9 +1,9 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 
+	"github.com/Jeffail/gabs/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/mochi-co/mqtt/server"
 )
@@ -21,21 +21,42 @@ func addMqtt(mqttServer *server.Server) gin.HandlerFunc {
 	}
 }
 
-func webhooksHandler(c *gin.Context) {
-	var data interface{}
+func assignBody(secret string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		data, err := gabs.ParseJSONBuffer(c.Request.Body)
 
-	if err := json.NewDecoder(c.Request.Body).Decode(&data); err != nil {
-		c.String(400, "Could not parse body")
-		fmt.Errorf(err.Error())
+		if err != nil {
+			c.String(400, "Could not parse body")
+			c.Abort()
 
-		return
+			fmt.Println(err.Error())
+
+			return
+		}
+
+		if webhookSecret := data.Path("secret").Data(); webhookSecret != secret {
+			c.String(400, "Could not parse body")
+			c.Abort()
+			
+			return
+		}
+
+		c.Set("data", data)
+
+		c.Next()
 	}
+}
 
+func webhooksHandler(c *gin.Context) {
 	mqttServer, _ := c.Value("mqttServer").(*server.Server)
 
 	go func() {
-		marshalledData, _ := json.Marshal(data)
-		mqttServer.Publish("test", marshalledData, false)
+		data, _ := c.Value("data").(*gabs.Container)
+
+		organization := data.Path("organization_id").Data().(string)
+		action := data.Path("action").Data().(string)
+
+		mqttServer.Publish(string(organization)+"/"+action, data.Bytes(), false)
 	}()
 
 	c.String(200, "ok")
@@ -44,6 +65,6 @@ func webhooksHandler(c *gin.Context) {
 func CreateServer(config *Configuration) *gin.Engine {
 	server := gin.Default()
 
-	server.POST("/webhooks", addMqtt(config.MqttServer), webhooksHandler)
+	server.POST("/webhooks", assignBody(config.Secret), addMqtt(config.MqttServer), webhooksHandler)
 	return server
 }

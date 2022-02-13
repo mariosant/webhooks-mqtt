@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"webhooks/api"
 	"webhooks/mqtt"
@@ -14,19 +13,18 @@ func App() error {
 		Name: "Livechat webhooks",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:    "Secret",
+				Name:    "secret",
 				EnvVars: []string{"SECRET"},
+				Required: true,
 			},
 		},
 		Action: func(c *cli.Context) error {
-			fmt.Print("Skata")
-			// secret := c.String("Secret")
 			mqttServer := mqtt.CreateMqtt()
 
 			apiConfig := api.Configuration{
 				MqttServer: mqttServer,
 				Port:       3000,
-				Secret:     "secret",
+				Secret:     c.String("secret"),
 			}
 
 			apiServer := api.CreateServer(&apiConfig)

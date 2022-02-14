@@ -3,6 +3,7 @@ package mqtt
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	m "github.com/mochi-co/mqtt/server"
 	"github.com/mochi-co/mqtt/server/listeners"
@@ -16,10 +17,10 @@ func (a *Auth) Authenticate(user, password []byte) bool {
 }
 
 func (a *Auth) ACL(user []byte, topic string, write bool) bool {
-	u := string(user)
-	fmt.Println(u, topic, write)
+	isLegitTopic := strings.HasPrefix(topic, string(user))
+	isReadOnly := !write
 
-	return true
+	return isLegitTopic && isReadOnly
 }
 
 func CreateMqtt() *m.Server {

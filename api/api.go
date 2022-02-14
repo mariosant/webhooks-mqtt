@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/gin-gonic/gin"
@@ -19,10 +20,12 @@ func publishMqtt(mqttServer *server.Server) gin.HandlerFunc {
 		go func() {
 			data, _ := c.Value("data").(*gabs.Container)
 
-			organization := data.Path("organization_id").Data().(string)
+			organization := strconv.FormatFloat(data.Path("license_id").Data().(float64), 'f', 0, 64)
 			action := data.Path("action").Data().(string)
 
-			mqttServer.Publish(string(organization)+"/"+action, data.Bytes(), false)
+			fmt.Println(organization, action)
+
+			mqttServer.Publish(organization+"/"+action, data.Bytes(), false)
 		}()
 
 		c.Next()
@@ -52,7 +55,7 @@ func requireSecret(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		data, _ := c.Value("data").(*gabs.Container)
 
-		if webhookSecret := data.Path("secret").Data(); webhookSecret != secret {
+		if webhookSecret := data.Path("secret_key").Data(); webhookSecret != secret {
 			c.String(400, "Could not parse body")
 			c.Abort()
 
@@ -71,5 +74,6 @@ func CreateServer(config *Configuration) *gin.Engine {
 	server := gin.Default()
 
 	server.POST("/webhooks", assignBody(), requireSecret(config.Secret), publishMqtt(config.MqttServer), webhooksHandler)
+
 	return server
 }

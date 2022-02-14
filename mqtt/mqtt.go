@@ -13,6 +13,7 @@ type Auth struct{}
 
 func (a *Auth) Authenticate(user, password []byte) bool {
 	fmt.Println(user, password)
+
 	return true
 }
 

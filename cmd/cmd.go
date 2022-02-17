@@ -19,7 +19,7 @@ func App() error {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			mqttServer := mqtt.CreateMqtt()
+			mqttServer := mqtt.CreateMqtt(c.String("secret"))
 
 			apiConfig := api.Configuration{
 				MqttServer: mqttServer,

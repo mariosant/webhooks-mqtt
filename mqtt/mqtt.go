@@ -1,20 +1,23 @@
 package mqtt
 
 import (
-	"fmt"
 	"log"
 	"strings"
+
+	"webhooks/lib"
 
 	m "github.com/mochi-co/mqtt/server"
 	"github.com/mochi-co/mqtt/server/listeners"
 )
 
-type Auth struct{}
+type Auth struct{
+	secret string
+}
 
 func (a *Auth) Authenticate(user, password []byte) bool {
-	fmt.Println(user, password)
+	expectedPassword := lib.GeneratePassword(string(user), a.secret)
 
-	return true
+	return expectedPassword == string(password)
 }
 
 func (a *Auth) ACL(user []byte, topic string, write bool) bool {
@@ -24,13 +27,17 @@ func (a *Auth) ACL(user []byte, topic string, write bool) bool {
 	return isLegitTopic && isReadOnly
 }
 
-func CreateMqtt() *m.Server {
+func CreateMqtt(secret string) *m.Server {
 	server := m.New()
 
 	tcp := listeners.NewTCP("t1", ":1883")
 
+	auth := &Auth{
+		secret: secret,
+	}
+
 	err := server.AddListener(tcp, &listeners.Config{
-		Auth: new(Auth),
+		Auth: auth,
 	})
 
 	if err != nil {

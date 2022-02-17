@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/mochi-co/mqtt/server"
 )
@@ -15,7 +16,7 @@ func CreateServer(config *Configuration) *gin.Engine {
 	server := gin.Default()
 
 	server.POST("/webhooks", assignBody(), requireSecret(config.Secret), publishMqtt(config.MqttServer), webhooksHandler)
-	server.POST("/me", meHandler(config.Secret))
+	server.POST("/me", cors.Default(), meHandler(config.Secret))
 
 	return server
 }

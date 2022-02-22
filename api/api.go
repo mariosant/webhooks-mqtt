@@ -15,8 +15,14 @@ type Configuration struct {
 func CreateServer(config *Configuration) *gin.Engine {
 	server := gin.Default()
 
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true
+	corsConfig.AddAllowHeaders("Authorization")
+
+	server.Use(cors.New(corsConfig))
+
 	server.POST("/webhooks", assignBody(), requireSecret(config.Secret), publishMqtt(config.MqttServer), webhooksHandler)
-	server.GET("/me", cors.Default(), meHandler(config.Secret))
+	server.GET("/me", meHandler(config.Secret))
 
 	return server
 }

@@ -16,7 +16,7 @@ func CreateServer(config *Configuration) *gin.Engine {
 	server := gin.Default()
 
 	server.POST("/webhooks", assignBody(), requireSecret(config.Secret), publishMqtt(config.MqttServer), webhooksHandler)
-	server.POST("/me", cors.Default(), meHandler(config.Secret))
+	server.GET("/me", cors.Default(), meHandler(config.Secret))
 
 	return server
 }
